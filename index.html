@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Voting Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.ethers.io/lib/ethers-5.4.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .dark {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .receipt {
+            background: repeating-linear-gradient(45deg, #f0f0f0 0px, #f0f0f0 20px, #ffffff 20px, #ffffff 40px);
+        }
+    </style>
+</head>
+<body class="font-[Inter]">
+    <div id="app" class="min-h-screen bg-gray-50 transition-colors duration-200">
+        <!-- Navigation -->
+        <nav class="bg-blue-600 text-white p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl font-bold">E-Voting Platform</h1>
+                <div class="flex items-center gap-4">
+                    <select id="language" class="bg-white text-black px-3 py-1 rounded">
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी</option>
+                        <option value="te">తెలుగు</option>
+                    </select>
+                    <button id="themeToggle" class="p-2 rounded hover:bg-blue-700">
+                        <i class="bi bi-moon-fill"></i>
+                    </button>
+                    <button id="connectWallet" class="bg-blue-700 px-4 py-2 rounded hover:bg-blue-800">
+                        Connect Wallet
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="container mx-auto p-4">
+            <!-- Authentication Section -->
+            <div id="authSection" class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-4">Aadhaar Authentication</h2>
+                <form id="aadharForm" class="space-y-4">
+                    <div>
+                        <label class="block mb-2">Aadhaar Number</label>
+                        <input type="text" class="w-full p-2 border rounded" maxlength="12" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                        Verify Aadhaar
+                    </button>
+                </form>
+            </div>
+
+            <!-- Voting Section (Hidden until authenticated) -->
+            <div id="votingSection" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Candidate Cards -->
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36" class="w-full h-48 object-cover rounded mb-4">
+                        <h3 class="text-xl font-bold mb-2">John Doe</h3>
+                        <p class="text-gray-600 mb-4">Party A</p>
+                        <button class="vote-btn w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                            Vote
+                        </button>
+                    </div>
+                    <!-- Add more candidate cards -->
+                </div>
+            </div>
+
+            <!-- Live Results Section -->
+            <div id="resultsSection" class="mt-8">
+                <h2 class="text-2xl font-bold mb-4">Live Results</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-bold mb-4">Voting Statistics</h3>
+                        <p class="mb-2">Total Votes: <span id="totalVotes">0</span></p>
+                        <p class="mb-2">Voting Percentage: <span id="votingPercentage">0%</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complaint Portal -->
+            <div id="complaintPortal" class="mt-8 bg-white p-6 rounded-lg shadow">
+                <h2 class="text-2xl font-bold mb-4">File a Complaint</h2>
+                <form id="complaintForm" class="space-y-4">
+                    <div>
+                        <label class="block mb-2">Subject</label>
+                        <input type="text" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Description</label>
+                        <textarea class="w-full p-2 border rounded" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
+                        Submit Complaint
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const app = document.getElementById('app');
+        
+        themeToggle.addEventListener('click', () => {
+            app.classList.toggle('dark');
+            const icon = themeToggle.querySelector('i');
+            icon.classList.toggle('bi-moon-fill');
+            icon.classList.toggle('bi-sun-fill');
+        });
+
+        // Metamask Connection
+        const connectWallet = document.getElementById('connectWallet');
+        
+        connectWallet.addEventListener('click', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    connectWallet.textContent = 'Wallet Connected';
+                    connectWallet.disabled = true;
+                } catch (error) {
+                    console.error('Error connecting wallet:', error);
+                }
+            } else {
+                alert('Please install MetaMask!');
+            }
+        });
+
+        // Aadhaar Authentication
+        const aadharForm = document.getElementById('aadharForm');
+        const votingSection = document.getElementById('votingSection');
+
+        aadharForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Simulate authentication
+            setTimeout(() => {
+                alert('Aadhaar verified successfully!');
+                document.getElementById('authSection').style.display = 'none';
+                votingSection.classList.remove('hidden');
+            }, 1000);
+        });
+
+        // Voting Function
+        document.querySelectorAll('.vote-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const confirmed = confirm('Confirm your vote?');
+                if (confirmed) {
+                    // Simulate vote recording
+                    alert('Vote recorded successfully!');
+                    generateReceipt();
+                }
+            });
+        });
+
+        // Receipt Generation
+        function generateReceipt() {
+            const receipt = document.createElement('div');
+            receipt.className = 'receipt fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-lg shadow-xl';
+            receipt.innerHTML = `
+                <h3 class="text-xl font-bold mb-4">Vote Confirmation Receipt</h3>
+                <p>Vote ID: ${Math.random().toString(36).substr(2, 9)}</p>
+                <p>Date: ${new Date().toLocaleDateString()}</p>
+                <p>Time: ${new Date().toLocaleTimeString()}</p>
+                <button class="mt-4 bg-blue-600 text-white px-4 py-2 rounded" onclick="this.parentElement.remove()">Close</button>
+            `;
+            document.body.appendChild(receipt);
+        }
+
+        // Language Switch
+        const languageSelect = document.getElementById('language');
+        languageSelect.addEventListener('change', (e) => {
+            // Implement language switching logic here
+            alert(`Language switched to ${e.target.options[e.target.selectedIndex].text}`);
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
